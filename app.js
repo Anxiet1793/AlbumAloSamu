@@ -66,7 +66,9 @@ app.get('/images', async (req, res) => {
     res.status(500).json({ success: false, error: 'Error al obtener imágenes' });
   }
 });
-
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
 // Puerto en el que corre el servidor
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
