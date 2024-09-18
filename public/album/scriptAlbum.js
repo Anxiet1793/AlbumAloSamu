@@ -9,7 +9,7 @@ document.getElementById('photoForm').addEventListener('submit', async function (
     formData.append('file', fileInput.files[0]);
 
     // Enviar la imagen al backend
-    const response = await fetch('http://localhost:10000/upload', {
+    const response = await fetch('https://albumalosamu.onrender.com/upload', {
         method: 'POST',
         body: formData,
     });
@@ -47,7 +47,7 @@ document.getElementById('photoForm').addEventListener('submit', async function (
 });
 // Función para cargar todas las imágenes al cargar la página
 window.addEventListener('load', async function () {
-    const response = await fetch('http://localhost:10000/images');
+    const response = await fetch('https://albumalosamu.onrender.com/images');
     const images = await response.json();
 
     images.forEach(image => {
