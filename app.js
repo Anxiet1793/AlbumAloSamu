@@ -1,61 +1,91 @@
-// Importar dependencias necesarias
 const express = require('express');
 const multer = require('multer');
 const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cors = require('cors');
 const path = require('path');
+const { Pool } = require('pg'); // Importar el cliente de PostgreSQL
+require('dotenv').config(); // Para cargar las variables de entorno del archivo .env
 
-// Inicializar la aplicación de Express
 const app = express();
-
-// Permitir que cualquier dominio acceda a la API (CORS)
 app.use(cors());
-
-// Configuración para recibir datos en formato JSON
 app.use(express.json());
-
-// Configurar la carpeta 'public' para servir archivos estáticos
-app.use(express.static(path.join(__dirname, 'public')));
 
 // Configuración de Cloudinary
 cloudinary.config({
-  cloud_name: 'dbikzyivp',  // Reemplaza con tu cloud_name
-  api_key: '938154962967196',  // Reemplaza con tu API key
-  api_secret: 'nSa01FPaxQBzrwDn7_Bn_fq-YNE'  // Reemplaza con tu API secret
+  cloud_name: 'dbikzyivp',
+  api_key: '938154962967196',
+  api_secret: 'nSa01FPaxQBzrwDn7_Bn_fq-YNE'
+});
+
+// Conexión a la base de datos PostgreSQL
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: {
+    rejectUnauthorized: false // Para evitar problemas de SSL en Render
+  }
 });
 
 // Configuración de almacenamiento de Cloudinary con Multer
 const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
-    folder: 'album',  // Nombre de la carpeta en Cloudinary donde se guardarán las imágenes
-    format: async (req, file) => 'png',  // Puedes cambiar el formato si lo necesitas
-    public_id: (req, file) => file.originalname  // Nombre del archivo en Cloudinary
+    folder: 'album',
+    format: async (req, file) => 'png',
+    public_id: (req, file) => file.originalname
   },
 });
 
 const upload = multer({ storage: storage });
 
-// Ruta para subir una imagen a Cloudinary
-app.post('/upload', upload.single('file'), (req, res) => {
-  res.json({ url: req.file.path });  // Retorna la URL de la imagen almacenada en Cloudinary
+// Ruta para subir una imagen y guardar su información en PostgreSQL
+app.post('/upload', upload.single('file'), async (req, res) => {
+  const { description, youtubeUrl } = req.body;
+  const imageUrl = req.file.path;
+
+  try {
+    // Guardar la URL de la imagen y descripción en PostgreSQL
+    const result = await pool.query(
+      'INSERT INTO images (image_url, description, youtube_url) VALUES ($1, $2, $3) RETURNING *',
+      [imageUrl, description, youtubeUrl]
+    );
+    res.json({ success: true, image: result.rows[0] });
+  } catch (error) {
+    console.error('Error al guardar en la base de datos:', error);
+    res.status(500).json({ success: false, error: 'Error al guardar en la base de datos' });
+  }
 });
 
-// Ruta para servir el archivo index.html
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+// Ruta para obtener todas las imágenes desde PostgreSQL
+app.get('/images', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM images ORDER BY id DESC');
+    res.json(result.rows);
+  } catch (error) {
+    console.error('Error al obtener imágenes de la base de datos:', error);
+    res.status(500).json({ success: false, error: 'Error al obtener imágenes' });
+  }
 });
 
-// Ruta de fallback en caso de que no se encuentre la página
-app.get('*', (req, res) => {
-  res.status(404).send('Página no encontrada');
-});
-
-// Configuración del puerto (Render asigna un puerto automáticamente, si no, usar 3000)
+// Puerto en el que corre el servidor
 const PORT = process.env.PORT || 3000;
-
-// Iniciar el servidor
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
+});
+app.get('/create-table', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      CREATE TABLE IF NOT EXISTS images (
+        id SERIAL PRIMARY KEY,
+        image_url TEXT NOT NULL,
+        description TEXT,
+        youtube_url TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    res.send('Tabla creada exitosamente');
+  } catch (error) {
+    console.error('Error creando la tabla:', error);
+    res.status(500).send('Error al crear la tabla');
+  }
 });

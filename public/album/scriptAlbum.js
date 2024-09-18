@@ -45,3 +45,12 @@ document.getElementById('photoForm').addEventListener('submit', async function (
     document.getElementById('youtubeUrl').value = '';
     document.getElementById('description').value = '';
 });
+// Función para cargar todas las imágenes al cargar la página
+window.addEventListener('load', async function () {
+    const response = await fetch('http://localhost:3000/images');
+    const images = await response.json();
+
+    images.forEach(image => {
+        addImageToGallery(image.image_url, image.description, image.youtube_url);
+    });
+});
