@@ -74,4 +74,20 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
-
+app.get('/create-table', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      CREATE TABLE IF NOT EXISTS images (
+        id SERIAL PRIMARY KEY,
+        image_url TEXT NOT NULL,
+        description TEXT,
+        youtube_url TEXT,
+        created_at TIMESTAMP DEFAULT NOW()
+      );
+    `);
+    res.send('Tabla creada exitosamente');
+  } catch (error) {
+    console.error('Error creando la tabla:', error);
+    res.status(500).send('Error al crear la tabla');
+  }
+});
