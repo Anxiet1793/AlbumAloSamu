@@ -47,7 +47,7 @@ document.getElementById('photoForm').addEventListener('submit', async function (
 });
 // Función para cargar todas las imágenes al cargar la página
 window.addEventListener('load', async function () {
-    const response = await fetch('http://localhost:3000/images');
+    const response = await fetch('https://albumalosamu.onrender.com/images');
     const images = await response.json();
 
     images.forEach(image => {
