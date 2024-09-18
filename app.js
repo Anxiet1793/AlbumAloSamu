@@ -17,7 +17,7 @@ cloudinary.config({
   api_key: '938154962967196',
   api_secret: 'nSa01FPaxQBzrwDn7_Bn_fq-YNE'
 });
-
+app.use(express.static(path.join(__dirname, 'public')));
 // Conexión a la base de datos PostgreSQL
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
