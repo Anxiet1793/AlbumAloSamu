@@ -4,25 +4,25 @@ const cloudinary = require('cloudinary').v2;
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cors = require('cors');
 const path = require('path');
-const { Pool } = require('pg'); // Importar el cliente de PostgreSQL
-require('dotenv').config(); // Para cargar las variables de entorno del archivo .env
+const { Pool } = require('pg'); // Cliente PostgreSQL
 
 const app = express();
-app.use(cors());
-app.use(express.json());
+app.use(cors());  // Permitir solicitudes desde cualquier origen
+app.use(express.json());  // Parsear JSON en solicitudes
+app.use(express.static(path.join(__dirname, 'public')));  // Servir archivos estáticos
 
 // Configuración de Cloudinary
 cloudinary.config({
-  cloud_name: 'dbikzyivp',
-  api_key: '938154962967196',
-  api_secret: 'nSa01FPaxQBzrwDn7_Bn_fq-YNE'
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME || 'dbikzyivp',
+  api_key: process.env.CLOUDINARY_API_KEY || '938154962967196',
+  api_secret: process.env.CLOUDINARY_API_SECRET || 'nSa01FPaxQBzrwDn7_Bn_fq-YNE'
 });
-app.use(express.static(path.join(__dirname, 'public')));
-// Conexión a la base de datos PostgreSQL
+
+// Conexión a la base de datos PostgreSQL con la URL proporcionada directamente
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL,
+  connectionString: 'postgres://albumalosamu_user:v6IRsZNmR1gI0q7TG4UieRasU5747xMH@dpg-crlk078gph6c73e76a60-a:5432/albumalosamu',
   ssl: {
-    rejectUnauthorized: false // Para evitar problemas de SSL en Render
+    rejectUnauthorized: false  // Para evitar problemas de SSL
   }
 });
 
@@ -31,20 +31,19 @@ const storage = new CloudinaryStorage({
   cloudinary: cloudinary,
   params: {
     folder: 'album',
-    format: async (req, file) => 'png',
-    public_id: (req, file) => file.originalname
-  },
+    format: async (req, file) => 'png',  // Formato de la imagen
+    public_id: (req, file) => file.originalname  // Nombre de la imagen
+  }
 });
 
 const upload = multer({ storage: storage });
 
-// Ruta para subir una imagen y guardar su información en PostgreSQL
+// Ruta para subir una imagen y guardar en PostgreSQL
 app.post('/upload', upload.single('file'), async (req, res) => {
   const { description, youtubeUrl } = req.body;
-  const imageUrl = req.file.path;
+  const imageUrl = req.file.path;  // URL de la imagen subida a Cloudinary
 
   try {
-    // Guardar la URL de la imagen y descripción en PostgreSQL
     const result = await pool.query(
       'INSERT INTO images (image_url, description, youtube_url) VALUES ($1, $2, $3) RETURNING *',
       [imageUrl, description, youtubeUrl]
@@ -66,17 +65,11 @@ app.get('/images', async (req, res) => {
     res.status(500).json({ success: false, error: 'Error al obtener imágenes' });
   }
 });
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
-});
-// Puerto en el que corre el servidor
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Servidor corriendo en el puerto ${PORT}`);
-});
+
+// Ruta para crear la tabla de imágenes si no existe
 app.get('/create-table', async (req, res) => {
   try {
-    const result = await pool.query(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS images (
         id SERIAL PRIMARY KEY,
         image_url TEXT NOT NULL,
@@ -90,4 +83,15 @@ app.get('/create-table', async (req, res) => {
     console.error('Error creando la tabla:', error);
     res.status(500).send('Error al crear la tabla');
   }
+});
+
+// Ruta para servir el archivo index.html
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+});
+
+// Puerto en el que corre el servidor
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+  console.log(`Servidor corriendo en el puerto ${PORT}`);
 });
