@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Álbum de Fotos</title>
+    <link rel="stylesheet" href="stylesAlbum.css">
+</head>
+<body>
+    <div class="header">
+        <img src="../logo.png" alt="Nuestro Álbum" class="logo">
+    </div>
+
+    <div class="form-container">
+        <form id="photoForm" enctype="multipart/form-data">
+            <input type="file" id="fileInput" name="file" accept="image/*" required>
+            <input type="url" id="youtubeUrl" placeholder="URL de Youtube">
+            <input type="text" id="description" placeholder="Descripción">
+            <button type="submit">Subir</button>
+        </form>
+    </div>
+
+    <div id="gallery" class="gallery"></div>
+
+    <script src="scriptAlbum.js"></script>
+</body>
+</html>
