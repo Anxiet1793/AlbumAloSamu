@@ -9,7 +9,7 @@ document.getElementById('photoForm').addEventListener('submit', async function (
     formData.append('file', fileInput.files[0]);
 
     // Enviar la imagen al backend
-    const response = await fetch('http://localhost:3000/images', {
+    const response = await fetch('https://albumalosamu.onrender.com/upload', {
         method: 'POST',
         body: formData,
     });
